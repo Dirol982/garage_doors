@@ -545,6 +545,63 @@
     $$('.rev', r).forEach(function (n) { var c = n.cloneNode(true); c.setAttribute('aria-hidden', 'true'); r.appendChild(c); });
   });
 
+  /* ================= reviews: swipe, drag, arrows, dots, gentle autoplay ================= */
+  var rt = $('[data-reviews]');
+  if (rt) {
+    var cards = $$('.rev', rt), dotsBox = $('[data-rev-dots]'), lastTouch = 0;
+    var cardStep = function () { return cards[1] ? cards[1].offsetLeft - cards[0].offsetLeft : rt.clientWidth; };
+    var current = function () { return clamp(Math.round(rt.scrollLeft / cardStep()), 0, cards.length - 1); };
+    var maxIndex = function () { return Math.max(0, Math.ceil((rt.scrollWidth - rt.clientWidth) / cardStep())); };
+    var go = function (i) { rt.scrollTo({ left: clamp(i, 0, maxIndex()) * cardStep(), behavior: reduce ? 'auto' : 'smooth' }); };
+    var user = function () { lastTouch = Date.now(); };
+    var dots = cards.map(function (c, i) {
+      var d = document.createElement('button'); d.type = 'button'; d.setAttribute('aria-label', 'Review ' + (i + 1));
+      d.addEventListener('click', function () { user(); go(i); });
+      dotsBox.appendChild(d); return d;
+    });
+    var mark = function () {
+      var i = current(), atEnd = rt.scrollLeft + rt.clientWidth >= rt.scrollWidth - 4;
+      if (atEnd) i = cards.length - 1 - Math.max(0, Math.floor(rt.clientWidth / cardStep()) - 1);
+      dots.forEach(function (d, k) { d.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    };
+    rt.addEventListener('scroll', function () { requestAnimationFrame(mark); }, { passive: true });
+    mark();
+    $('[data-rev-prev]').addEventListener('click', function () { user(); go(current() - 1); });
+    $('[data-rev-next]').addEventListener('click', function () { user(); go(current() + 1); });
+    rt.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight') { e.preventDefault(); user(); go(current() + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); user(); go(current() - 1); }
+    });
+    ['touchstart', 'wheel', 'pointerdown'].forEach(function (ev) { rt.addEventListener(ev, user, { passive: true }); });
+    // mouse drag with a little momentum
+    var rdown = false, rsx = 0, rsl = 0, vx = 0, lx = 0, lt = 0;
+    rt.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse') return;
+      rdown = true; rsx = lx = e.clientX; rsl = rt.scrollLeft; lt = performance.now(); vx = 0;
+    });
+    addEventListener('pointermove', function (e) {
+      if (!rdown) return;
+      if (Math.abs(e.clientX - rsx) > 4) rt.classList.add('is-dragging');
+      rt.scrollLeft = rsl - (e.clientX - rsx);
+      var t = performance.now(); vx = (e.clientX - lx) / Math.max(1, t - lt); lx = e.clientX; lt = t;
+    });
+    addEventListener('pointerup', function () {
+      if (!rdown) return; rdown = false; rt.classList.remove('is-dragging');
+      var i = Math.round((rt.scrollLeft - vx * 220) / cardStep()); go(i);
+    });
+    // autoplay only while visible and nobody has touched it for a while
+    var visible = false;
+    if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { visible = es[0].isIntersecting; }, { threshold: .3 }).observe(rt);
+    var hovering = false;
+    rt.addEventListener('mouseenter', function () { hovering = true; });
+    rt.addEventListener('mouseleave', function () { hovering = false; });
+    if (!reduce) setInterval(function () {
+      if (!visible || hovering || rdown || Date.now() - lastTouch < 9000 || document.hidden) return;
+      var atEnd = rt.scrollLeft + rt.clientWidth >= rt.scrollWidth - 4;
+      go(atEnd ? 0 : current() + 1);
+    }, 4500);
+  }
+
   /* ================= service area check ================= */
   var zipForm = $('[data-zip]');
   if (zipForm) {
