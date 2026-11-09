@@ -1,42 +1,34 @@
-# Veles Garage Door Service — new website
+# Veles Garage Door Service — website
 
-Static redesign of https://velesgaragedoorservice.com/ (Tomball, TX). Plain HTML/CSS/JS, no build step, ready for GitHub Pages.
+Apple-style, interactive one-page site for https://velesgaragedoorservice.com/ (Tomball, TX).
+Plain HTML/CSS/JS, no build step, served by GitHub Pages from `main`.
 
 ```
 index.html            the page
 assets/css/site.css   styles, light + dark theme
-assets/js/site.js     theme switch, symptom picker, price calculator, transitions, form
-assets/img/           the company's own job photos (from the current site), logo, favicon
+assets/js/site.js     all interactions
+assets/img/           Veles job photos, logo, favicon, Pexels stock (files starting with stock-)
 ```
 
-Preview locally: open `index.html`, or `python3 -m http.server` and visit http://localhost:8000.
+Preview locally: `python3 -m http.server` → http://localhost:8000
 
-## Positioning (USP)
+## Interactive pieces
 
-Competitors around Tomball fall into two groups: franchises (Precision Door: 1,400+ reviews, 90-day workmanship promise, "no service fees", call center) and lead-gen sites with generic claims ("15-minute response", 555 numbers). Veles wins on what neither can say:
-
-1. **Text a photo, get a price before we drive out.** Real flow from reviews (Travis B.). Every CTA on the site opens a prefilled SMS.
-2. **Owner-operated, no call center.** The person who reads the text shows up with the parts (Dmitri, named in reviews).
-3. **Prices on the page.** Most local competitors hide them. Here: a price table, a symptom picker and a calculator.
-4. **Same day, 24/7, 5.0 rating, 2025 "Best Garage Door Contractor in Texas"** (Garage Door Galaxy).
-
-## What's on the page
-
-- Two-by-two hero board: name, real install photo, the Veles truck, the SMS offer, 24/7 + rating.
-- **"What's your door doing?"** symptom picker: likely cause, typical price, whether it's safe to use, prefilled SMS.
-- Mosaic: one finished door photo cut across tiles that assemble on scroll.
-- Price table (cards on phones) + **interactive price calculator** (service, size, material, timing, add-ons; animated total; "Text this to Veles").
-- Review, "Text, price, fixed" process diagram, drag gallery of real jobs with reviews, FAQ, booking form, block wordmark footer.
-- Light / dark theme (follows the system, remembers the choice, circular view-transition switch).
-- Transitions: key sections arrive like a sectional garage door rolling up; staggered reveals; hero scales back on scroll; drifting photo strip.
-- Phone: sticky Call / Text bar, click-to-call everywhere, A2P-compliant SMS consent text.
-- LocalBusiness JSON-LD, Open Graph, `prefers-reduced-motion` support, keyboard-accessible controls.
+- **Hero door** — the garage door rolls up as you scroll; drag it with the mouse or press the remote to open/close.
+- **Why Veles bento** — tilt-on-hover cards, animated text-message demo ("Text a photo. Get a price."), live Tomball clock (24/7), rotating brand list, award.
+- **Exploded view** — scroll takes a door apart (opener, spring, cables, tracks, rollers, panels, sensors); tap any part for symptoms, price and "safe to use?".
+- **Manifesto** — words light up as you scroll.
+- **Spring life check** — slider + spring type + install year → years of life left, animated spring.
+- **Price it in seconds** — two modes:
+  - *Design a new door*: width, style, color, windows, insulation, opener; live SVG preview with a person for scale and a day/night switch.
+  - *Price a repair*: service, size, timing, add-ons.
+  Both animate the total and can text the result to (832) 606-6633.
+- **Recent work** carousel with drag + lightbox, two-way review marquee, **ZIP / city checker** for the service area, FAQ, callback form.
+- Light/dark theme (circular transition), sticky Call/Text bar on phones, reduced-motion support.
 
 ## Before launch — confirm with the owner
 
-- **All prices are sample ranges** (table, symptom picker, calculator model at the top of the calculator block in `assets/js/site.js`, FAQ). Replace with real numbers.
-- After-hours surcharge ($75–$125) and add-on prices: samples.
-- Brand list in the FAQ (LiftMaster, Chamberlain, Genie, Clopay, Amarr) and the "within minutes" text-reply promise.
-- Service area list.
-- Booking form: set `FORM_ENDPOINT` in `assets/js/site.js` (Formspree, CRM webhook…). Without it the form opens a prefilled text message to (832) 606-6633.
-- Policy pages and the wind-rated blog post still link to the current WordPress site.
+- **All prices are samples**: exploded-view prices, chat demo ($320), FAQ, door configurator model (`STYLES`, `COLORS` in `site.js`), repair model (`PRICE` in `site.js`).
+- Brand list, "within the hour" claim, ZIP list (`AREAS` in `site.js`).
+- Callback form: set `FORM_ENDPOINT` in `site.js`; without it the form opens a prefilled SMS.
+- Stock photos (Pexels license, free for commercial use): `stock-garage-interior` (Peter Vang), `stock-dusk-home` (Binyamin Mellish), others unused but kept for later sections. Replace with own photos when available.
