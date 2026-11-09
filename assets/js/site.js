@@ -114,7 +114,7 @@
     // hero door
     if (hero) {
       var p = progress(hero, 0);
-      var open = reduce ? (p > .4 ? 1 : 0) : ease(clamp((p - .08) / .72, 0, 1));
+      var open = reduce ? (p > .4 ? 1 : 0) : ease(clamp((p - .04) / .86, 0, 1));
       hero.style.setProperty('--hp', clamp(p * 2.2, 0, 1).toFixed(3));
       if (Math.abs(open - lastOpen) > .001) {
         stage.style.setProperty('--open', open.toFixed(4));
@@ -128,9 +128,9 @@
     // exploded view
     if (explode) {
       var q = progress(explode, 0);
-      var x = reduce ? 1 : ease(clamp((q - .05) / .45, 0, 1));
+      var x = reduce ? 1 : ease(clamp(q / .9, 0, 1));
       xsvg.style.setProperty('--xp', x.toFixed(4));
-      xsvg.style.setProperty('--hot', q > .3 ? 1 : 0);
+      xsvg.style.setProperty('--hot', q > .15 || explode.getBoundingClientRect().top < innerHeight * .2 ? 1 : 0);
     }
 
     // manifesto words light up
