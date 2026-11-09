@@ -89,11 +89,18 @@
     words = $$('.w', wt);
   }
 
-  function progress(el, startOffset) {
-    var r = el.getBoundingClientRect();
-    var total = r.height - innerHeight;
-    return clamp((-r.top + (startOffset || 0)) / (total || 1), 0, 1);
+  /* Layout is measured once (and on resize), never inside the scroll loop.
+     The loop only reads scrollY and writes CSS variables that changed. */
+  var L = {};
+  function measure() {
+    var abs = function (el) { if (!el) return null; var r = el.getBoundingClientRect(); return { top: r.top + scrollY, h: r.height }; };
+    L.vh = innerHeight; L.max = document.documentElement.scrollHeight - innerHeight;
+    L.hero = abs(hero); L.explode = abs(explode); L.man = abs(manifesto); L.area = abs(area); L.book = abs(book);
   }
+  var prog = function (box, y) { return clamp((y - box.top) / ((box.h - L.vh) || 1), 0, 1); };
+  var last = {};
+  function setVar(el, key, name, v) { if (last[key] !== v) { last[key] = v; el.style.setProperty(name, v); } }
+  var litWords = 0;
 
   // fill the hero door with raised panels
   $$('.door--hero .door__panel').forEach(function (pn) { for (var k = 0; k < 8; k++) pn.insertBefore(document.createElement('i'), pn.firstChild); });
@@ -107,17 +114,15 @@
 
   var lastOpen = -1;
   function frame() {
-    // page progress
-    var max = document.documentElement.scrollHeight - innerHeight;
-    nav.style.setProperty('--sp', (scrollY / (max || 1)).toFixed(4));
+    var y = scrollY, vh = L.vh;
+    setVar(nav, 'sp', '--sp', (y / (L.max || 1)).toFixed(3));
 
-    // hero door
-    if (hero) {
-      var p = progress(hero, 0);
+    if (hero && L.hero && y < L.hero.top + L.hero.h + vh) {
+      var p = prog(L.hero, y);
       var open = reduce ? (p > .4 ? 1 : 0) : ease(clamp((p - .04) / .86, 0, 1));
-      hero.style.setProperty('--hp', clamp(p * 2.2, 0, 1).toFixed(3));
-      if (Math.abs(open - lastOpen) > .001) {
-        stage.style.setProperty('--open', open.toFixed(4));
+      setVar(hero, 'hp', '--hp', clamp(p * 2.2, 0, 1).toFixed(3));
+      if (Math.abs(open - lastOpen) > .002 || (open === 1 && lastOpen !== 1) || (open === 0 && lastOpen !== 0)) {
+        stage.style.setProperty('--open', open.toFixed(3));
         lastOpen = open;
         hero.classList.toggle('is-open', open > .92);
         remote.classList.toggle('is-on', open > .5);
@@ -125,39 +130,39 @@
       }
     }
 
-    // exploded view
-    if (explode) {
-      var q = progress(explode, 0);
-      var x = reduce ? 1 : ease(clamp(q / .9, 0, 1));
-      xsvg.style.setProperty('--xp', x.toFixed(4));
-      xsvg.style.setProperty('--hot', q > .15 || explode.getBoundingClientRect().top < innerHeight * .2 ? 1 : 0);
+    if (explode && L.explode && y > L.explode.top - vh && y < L.explode.top + L.explode.h) {
+      var q = prog(L.explode, y);
+      setVar(xsvg, 'xp', '--xp', (reduce ? 1 : ease(clamp(q / .9, 0, 1))).toFixed(3));
+      setVar(xsvg, 'hot', '--hot', (q > .12 || y > L.explode.top - vh * .2) ? 1 : 0);
     }
 
-    // manifesto words light up
-    if (words.length) {
-      var r = manifesto.getBoundingClientRect();
-      var m = clamp((innerHeight * .85 - r.top) / (r.height * .9), 0, 1);
+    if (words.length && L.man && y > L.man.top - vh && y < L.man.top + L.man.h) {
+      var m = clamp((y + vh * .85 - L.man.top) / (L.man.h * .9), 0, 1);
       var n = Math.round(m * words.length);
-      for (var i = 0; i < words.length; i++) words[i].classList.toggle('on', i < n);
+      if (n !== litWords) {
+        var lo = Math.min(n, litWords), hi = Math.max(n, litWords);
+        for (var i = lo; i < hi; i++) words[i].classList.toggle('on', i < n);
+        litWords = n;
+      }
     }
 
-    // area parallax
-    if (area) {
-      var ar = area.getBoundingClientRect();
-      area.style.setProperty('--ap', clamp(1 - (ar.top + ar.height) / (innerHeight + ar.height), 0, 1).toFixed(3));
+    if (area && L.area && y > L.area.top - vh && y < L.area.top + L.area.h) {
+      setVar(area, 'ap', '--ap', clamp((y + vh - L.area.top) / (vh + L.area.h), 0, 1).toFixed(3));
     }
 
-    // phone call bar: tuck away at the booking section (it has its own buttons)
-    if (callbar && book) {
-      var br = book.getBoundingClientRect();
-      callbar.style.setProperty('--cb', br.top < innerHeight && br.bottom > 0 ? 1 : 0);
+    if (callbar && L.book) {
+      setVar(callbar, 'cb', '--cb', (y + vh > L.book.top && y < L.book.top + L.book.h) ? 1 : 0);
     }
   }
   var ticking = false;
   function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(function () { ticking = false; frame(); }); } }
   addEventListener('scroll', onScroll, { passive: true });
-  addEventListener('resize', onScroll);
-  frame();
+  var remeasure = function () { measure(); frame(); };
+  addEventListener('resize', remeasure);
+  addEventListener('load', remeasure);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasure);
+  if ('ResizeObserver' in window) new ResizeObserver(function () { requestAnimationFrame(remeasure); }).observe(document.body);
+  measure(); frame();
 
   function heroScrollRange() {
     var top = hero.getBoundingClientRect().top + scrollY;
